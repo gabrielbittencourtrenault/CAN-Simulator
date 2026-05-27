@@ -16,23 +16,16 @@ MCP_CAN CAN(&fspi2, CAN_CS);
 // Definição IDs CAN
 const unsigned long ID_WAKEUP   = 0x100;
 const unsigned long ID_WAKEUPON = 0x101;
-const unsigned long ID_SOC      = 0x200;
-const unsigned long ID_SOCR     = 0X201;
 
 // Frames
 byte FRAME_WAKEUP [8] = {0XAA, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00};
 byte FRAME_WAKEUPON [8] = {0XAB, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-byte FRAME_SOC [8] = {0XBB, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00};
-byte FRAME_SOCR [8] = {0XBC, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00};
+
 
 // ---------- Estado ----------
 
 void sendwakeupon() {
   CAN.sendMsgBuf(ID_WAKEUPON, 0, 8, FRAME_WAKEUPON);
-}
-
-void sendsocr() {
-  CAN.sendMsgBuf(ID_SOCR, 0, 8, FRAME_SOCR);
 }
 
 void checkrequestwakeup() {
@@ -55,18 +48,6 @@ void checkrequestwakeup() {
   }
  }
 }
-
- void checkrequestsoc() {
-  if(!digitalRead(CAN_INT)) {
-    long unsigned int rxId;
-    byte len;
-    byte rxBuf[8];
-    CAN.readMsgBuf(&rxId, &len, rxBuf);
-  
-  if (rxId == ID_SOC && rxBuf[0] == 0xBB)
-    sendsocr();
- }
- }
 
 // ---------- Setup ----------
 void setup() {
@@ -91,9 +72,8 @@ void setup() {
 }
 
 // ---------- Loop ----------
-void loop() {
-  checkrequestwakeup();
-  checkrequestsoc();
-}
+
+
+
 
 
