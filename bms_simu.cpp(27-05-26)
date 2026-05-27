@@ -1,0 +1,63 @@
+#include <Arduino.h>
+#include <SPI.h>
+#include <mcp_can.h>
+#include <esp_system.h>
+bool bmsOn = false;
+
+// ---------- Pinos MCP2515 (HSPI dedicado) ----------
+#define CAN_CS    26
+#define CAN_INT   4
+#define CAN_MOSI  13
+#define CAN_MISO  27
+#define CAN_SCK   14
+
+// ---------- Objetos ----------
+SPIClass hspi(HSPI);
+MCP_CAN CAN(&hspi, CAN_CS);
+
+// IDs CAN
+const unsigned long ID_WAKEUP   = 0x100;
+const unsigned long ID_WAKEUPON = 0x101;
+
+
+// Frames
+byte FRAME_WAKEUP [8] = {0XAA, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00, 0X00};
+byte FRAME_WAKEUPON [8] = {0XAB, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+
+
+// Send Request WakeUP
+void enviarWakeup() {
+  byte resultado = CAN.sendMsgBuf(ID_WAKEUP, 0, 8, FRAME_WAKEUP);
+if(resultado == CAN_OK){
+   Serial.println("Frame enviado");
+}else{
+   Serial.println("Erro envio");
+}
+}
+
+
+// Receive Answer from WakeUP
+void checkanswerwakeup() { 
+
+    Serial.println("Verificando INT...");
+    Serial.println(digitalRead(CAN_INT));  // deve imprimir 0 quando chega frame
+
+  // buffer de armazenamento dos frames recebido via BMS
+  if(!digitalRead(CAN_INT)) { 
+    long unsigned int rxId; 
+    byte len; 
+    byte rxBuf[8]; 
+    CAN.readMsgBuf(&rxId, &len, rxBuf); // função pra juntar os frames
+
+    Serial.print("Frame recebido ID: 0x");
+    Serial.println(rxId, HEX);
+    Serial.print("Byte 0: 0x");
+    Serial.println(rxBuf[0], HEX);
+
+    // Caso a resposta seja esperada, confirma o BMS.
+    if (rxId == ID_WAKEUPON && rxBuf[0] == 0xAB) {
+      bmsOn = true;
+      Serial.println("BMS ON");
+     }
+  }
+}
